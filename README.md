@@ -29,7 +29,7 @@ Open PyCharm, go to Preferences (or File -> Settings) -> Project:yours -> Projec
 
 ## Using Jupyter
 
-    docker run -p 9999:9999 -dt al42and/debian-opencv run_jupyter
+    docker run -p 9999:9999 -dt al42and/debian-opencv2 run_jupyter
 
 And then open http://localhost:9999/ in your browser
 
@@ -44,30 +44,38 @@ With some [minor effort (and a bunch of X11 magic)](http://stackoverflow.com/a/2
 
 And now we can watch OpenCV videos or use [Matplotlib animations](http://matplotlib.org/examples/animation/simple_anim.html) from Jupyter notebook!
 
-## Using VNC
-
-    docker run -p 5900:5900 -dt al42and/debian-opencv run_vnc
-
-Then connect to localhost:5900 using your favorite VNC client. The password is `1234`
-
 ## Using SSH X-forwarding
 
-    docker run -p 5900:5900 -p 9999:9999 -p 2222:22 -dt al42and/debian-opencv run_ssh
+    docker run -p 9999:9999 -p 2222:22 -dt al42and/debian-opencv2 run_ssh
 
-This way, you have this container running in background, with all necessary ports available, if you decide to use Jupyter or VNC.
+This way, you have this container running in background, with Jupyter port available, just in case.
 
 Now, if you're on Linux or Mac, just do `ssh -X root@localhost -p2222`, with password being `1234`.
 
-If you're on Windows, install [Xming](https://sourceforge.net/projects/xming/) and use its XLaunch tool to connect to localhost, port 2222, username root and password 1234.
-
+If you're on Windows, things get more complicated. First, run `docker-machine ip default` in Docker console to get an IP of a virtual machine Docker uses.
+Then install [Xming](https://sourceforge.net/projects/xming/) and use its XLaunch tool to connect to this IP, port `2222`, username `root` and password `1234`.
 
 ### Jupyter and X in Windows
 
-There should be a way
+Surprisingly, this paragraph is pretty short. First, install Xming and run container as:
+
+    docker run -p 2222:22 -dt al42and/debian-opencv2 run_ssh
+
+Then download file `tools/run_jupyter.xlaunch` from this repository, right-click it and choose edit. XLaunch should open.
+Accept all default choices, but change host IP to the one returned by `docker-machine ip default`.
+
+After several seconds it should launch X-server on your machine, and Jupyter in container, with SSH connecting them.
+Now, open http://localhost:9999/ and rejoice!
+
+## Using VNC
+
+    docker run -p 5900:5900 -dt al42and/debian-opencv2 run_vnc
+
+Then connect to localhost:5900 using your favorite VNC client. The password is `1234`.
 
 # Building
 
-    docker build -t al42and/debian-opencv --no-cache .
+    docker build -t al42and/debian-opencv2 --no-cache .
 
 # Known issues:
 
