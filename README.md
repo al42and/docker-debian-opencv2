@@ -23,6 +23,9 @@ You can also try "Docker for Windows", which sounds like a better option, but is
 
 First, do `docker pull al42and/debian-opencv2:latest` to get an image (it's about 1GiB).
 
+If you want to bind host directory within container, use `docker run -v $(pwd):/app` option or the like.
+This might cause some problems on Linux due to different user IDs.
+
 ## Using PyCharm Professional
 
 Open PyCharm, go to Preferences (or File -> Settings) -> Project:yours -> Project Interpreter, and add new Remote Interpreter.
@@ -35,21 +38,20 @@ And then open http://localhost:9999/ in your browser
 
 ### Jupyter and X in Linux (probably MacOS too)
 
-With some [minor effort (and a bunch of X11 magic)](http://stackoverflow.com/a/25280523/929437) we can do the following to pass X socket inside container:
+With [some minor effort (and a bunch of X11 magic)](http://stackoverflow.com/a/25280523/929437) we can do the following to pass X socket inside container:
 
     XSOCK=/tmp/.X11-unix
     XAUTH=/tmp/.docker.xauth
     xauth nlist :0 | sed -e 's/^..../ffff/' | xauth -f $XAUTH nmerge -
-    docker run -p 9999:9999 -t -v $XSOCK:$XSOCK -v $XAUTH:$XAUTH -e XAUTHORITY=$XAUTH -e DISPLAY=$DISPLAY al42and/debian-opencv run_jupyter
+    docker run -p 9999:9999 -dt -v $XSOCK:$XSOCK -v $XAUTH:$XAUTH -e XAUTHORITY=$XAUTH -e DISPLAY=$DISPLAY al42and/debian-opencv2 run_jupyter
 
 And now we can watch OpenCV videos or use [Matplotlib animations](http://matplotlib.org/examples/animation/simple_anim.html) from Jupyter notebook!
 
 ## Using SSH X-forwarding
 
-    docker run -p 9999:9999 -p 2222:22 -dt al42and/debian-opencv2 run_ssh
+    docker run -p 2222:22 -dt al42and/debian-opencv2 run_ssh
 
-This way, you have this container running in background, with Jupyter port available, just in case.
-
+This way, you have this container running in background.
 Now, if you're on Linux or Mac, just do `ssh -X root@localhost -p2222`, with password being `1234`.
 
 If you're on Windows, things get more complicated. First, run `docker-machine ip default` in Docker console to get an IP of a virtual machine Docker uses.
@@ -66,6 +68,15 @@ Accept all default choices, but change host IP to the one returned by `docker-ma
 
 After several seconds it should launch X-server on your machine, and Jupyter in container, with SSH connecting them.
 Now, open http://localhost:9999/ and rejoice!
+
+### Jupyter and X in Linux/MacOS
+
+On Linux it's more efficient to use Unix sockets to connect to X server, but you can go ssh-way if you want:
+
+    docker run -p 2222:22 -dt al42and/debian-opencv2 run_ssh
+    ssh root@localhost -p2222 -L9999:localhost:9999 -Xf run_jupyter &>/dev/null
+    
+It start background ssh connection to container, with port 9999 and X forwarding.
 
 ## Using VNC
 
