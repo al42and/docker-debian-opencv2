@@ -1,11 +1,10 @@
 # Dockerfile to build environment with python2 and opencv2
 
-FROM debian:stable
+FROM resin/rpi-raspbian:latest
 MAINTAINER Andrey Alekseenko <al42and@gmail.com>
 
 # apt-get first
-RUN apt-get update
-RUN apt-get install -qy \
+RUN apt-get update && apt-get install -qy \
 	cmake \
 	git \
 	libopencv-dev \
@@ -20,39 +19,26 @@ RUN apt-get install -qy \
 	wget \
 	x11vnc \
 	xvfb \
+	xauth \
 	openssh-server
 
-# Install dev packages for building jupyter
-RUN apt-get install -qy libzmq3-dev
+# Install dev packages for building sklearn
+RUN apt-get install -qy build-essential
 
 # python libraries
 RUN pip install -U \
-	jupyter \
 	scikit-learn
 
 # Remove temporary packages
 RUN apt-get purge -qy \
-	libzmq3-dev
+	build-essential && apt-get autoremove -qy
 
 # Clean-up
 RUN rm -rf /var/lib/apt/lists/*
 # RUN apt-get clean # Not necessary, Debian does that for you
 RUN rm -rf '/root/.cache/pip/'
 
-# Add Tini, seems necessary for jupyter
-ENV TINI_VERSION v0.10.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /bin/tini
-RUN chmod +x /bin/tini
-# Actually, we only need tini for Jupyter, since sshd and x11vnc work anyway
-ENTRYPOINT ["/bin/tini", "--"]
-
 RUN mkdir /app
-
-# Jupyter notebook configuration
-COPY jupyter_notebook_config.py /root/.jupyter/jupyter_notebook_config.py
-COPY run_jupyter /bin/run_jupyter
-RUN chmod +x /bin/run_jupyter
-EXPOSE 9999
 
 # X11VNC configuration
 RUN mkdir -p /root/.vnc && x11vnc -storepasswd 1234 /root/.vnc/passwd
